@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.0.24
+
+- Fix HTTP 401 Unauthorized status overwrite bug in `_handle_client_error` to preserve `EXPIRED_TOKEN` and allow re-authentication
+- Fix `TypeError: unsupported operand type(s) for -: 'float' and 'NoneType'` in AWS client message timestamp calculation
+- Add handling for `ConnectivityStatus.DISCONNECTED` and `ConnectivityStatus.EXPIRED_TOKEN` in coordinator to automatically reconnect when AWS IoT broker connection drops
+- Replace `loop.create_task(...).__await__()` in signal callbacks with `self.hass.async_create_task(...)`
+
 ## v1.0.23
 
 - Remove navigate service (`mydolphin_plus.navigate`)
