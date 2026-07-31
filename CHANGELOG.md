@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.0.25
+
+- Add HTTP 429 Too Many Requests rate-limit handling with Retry-After header support and `ConnectivityStatus.RATE_LIMIT`
+- Implement exponential backoff for connection failures (60s, 120s, 240s... up to 15m) and automatic 5–15 minute backoff for HTTP 429 rate limits
+- Add reconnect state locking (`_is_reconnecting`) to prevent concurrent duplicate reconnect loops
+
 ## v1.0.24
 
 - Fix HTTP 401 Unauthorized status overwrite bug in `_handle_client_error` to preserve `EXPIRED_TOKEN` and allow re-authentication

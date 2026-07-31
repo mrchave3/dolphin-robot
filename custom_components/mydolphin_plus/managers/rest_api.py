@@ -579,6 +579,20 @@ class RestAPI:
 
             self._set_status(ConnectivityStatus.EXPIRED_TOKEN, message)
 
+        elif crex.status in [429]:
+            retry_after = None
+            if crex.headers is not None:
+                retry_after = crex.headers.get("Retry-After") or crex.headers.get(
+                    "retry-after"
+                )
+
+            rate_limit_msg = (
+                f"{message}, Retry-After: {retry_after}"
+                if retry_after
+                else message
+            )
+            self._set_status(ConnectivityStatus.RATE_LIMIT, rate_limit_msg)
+
         elif crex.status in [404, 405]:
             self._set_status(ConnectivityStatus.API_NOT_FOUND, message)
 

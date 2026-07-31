@@ -150,6 +150,9 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         self._last_update_api = 0
         self._last_update_ws = 0
 
+        self._reconnect_attempts = 0
+        self._is_reconnecting = False
+
         self._load_signal_handlers()
 
     @property
@@ -261,6 +264,8 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             return
 
         if status == ConnectivityStatus.CONNECTED:
+            self._reconnect_attempts = 0
+            self._is_reconnecting = False
             await self._api.update()
 
             await self._aws_client.update_api_data(self.api_data)
@@ -271,8 +276,9 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             ConnectivityStatus.FAILED,
             ConnectivityStatus.INVALID_CREDENTIALS,
             ConnectivityStatus.EXPIRED_TOKEN,
+            ConnectivityStatus.RATE_LIMIT,
         ]:
-            await self._handle_connection_failure()
+            await self._handle_connection_failure(status)
 
     async def _on_aws_client_status_changed(
         self, entry_id: str, status: ConnectivityStatus
@@ -281,6 +287,8 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             return
 
         if status == ConnectivityStatus.CONNECTED:
+            self._reconnect_attempts = 0
+            self._is_reconnecting = False
             await self._aws_client.update()
 
         if status in [
@@ -288,14 +296,37 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
             ConnectivityStatus.NOT_CONNECTED,
             ConnectivityStatus.DISCONNECTED,
             ConnectivityStatus.EXPIRED_TOKEN,
+            ConnectivityStatus.RATE_LIMIT,
         ]:
-            await self._handle_connection_failure()
+            await self._handle_connection_failure(status)
 
-    async def _handle_connection_failure(self):
+    async def _handle_connection_failure(self, status: ConnectivityStatus | None = None):
+        if self._is_reconnecting:
+            _LOGGER.debug("Reconnection already in progress, skipping duplicate request")
+            return
+
+        self._is_reconnecting = True
+        self._reconnect_attempts += 1
+
+        if status == ConnectivityStatus.RATE_LIMIT:
+            # For HTTP 429 Rate Limit, back off for 5 to 15 minutes
+            delay = min(900, max(300, 300 * self._reconnect_attempts))
+            _LOGGER.warning(
+                f"Maytronics API rate limit reached (HTTP 429). Backing off for {delay / 60:.1f} minute(s) before retry (attempt #{self._reconnect_attempts})"
+            )
+        else:
+            # Exponential backoff: 60s, 120s, 240s, 480s, max 900s (15 min)
+            base_delay = API_RECONNECT_INTERVAL.total_seconds()
+            delay = min(900, base_delay * (2 ** (self._reconnect_attempts - 1)))
+            _LOGGER.warning(
+                f"Connection failure ({status}) - reconnection attempt #{self._reconnect_attempts}, waiting {delay / 60:.1f} minute(s) before retry"
+            )
+
         await self._aws_client.terminate()
 
-        await sleep(API_RECONNECT_INTERVAL.total_seconds())
+        await sleep(delay)
 
+        self._is_reconnecting = False
         await self._api.initialize()
 
     async def _async_update_data(self):
