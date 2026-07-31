@@ -67,3 +67,5 @@ venv/
 __test__.py
 tokens.json
 config.json
+
+AGENTS.md

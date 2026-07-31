@@ -413,6 +413,9 @@ class RestAPI:
 
             payload = await self._async_post(TOKEN_URL, headers, request_data)
 
+            if payload is None:
+                payload = {}
+
             if self._status == ConnectivityStatus.TEMPORARY_CONNECTED:
                 data = payload.get(API_RESPONSE_DATA, {})
                 alert = payload.get(API_RESPONSE_ALERT, {})
@@ -576,7 +579,7 @@ class RestAPI:
 
             self._set_status(ConnectivityStatus.EXPIRED_TOKEN, message)
 
-        if crex.status in [404, 405]:
+        elif crex.status in [404, 405]:
             self._set_status(ConnectivityStatus.API_NOT_FOUND, message)
 
         else:

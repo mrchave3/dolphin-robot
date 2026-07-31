@@ -406,7 +406,11 @@ class AWSClient:
                 server_timestamp = payload_data.get(DATA_ROOT_TIMESTAMP)
 
                 now = datetime.now().timestamp()
-                diff = int(now) - server_timestamp
+                diff = (
+                    int(now) - server_timestamp
+                    if server_timestamp is not None
+                    else 0
+                )
 
                 self.data[WS_DATA_VERSION] = version
                 self.data[WS_DATA_TIMESTAMP] = server_timestamp

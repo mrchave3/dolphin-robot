@@ -202,13 +202,13 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
 
         @callback
         def on_api_status_changed(entry_id: str, status: ConnectivityStatus):
-            loop.create_task(self._on_api_status_changed(entry_id, status)).__await__()
+            self.hass.async_create_task(self._on_api_status_changed(entry_id, status))
 
         @callback
         def on_aws_client_status_changed(entry_id: str, status: ConnectivityStatus):
-            loop.create_task(
+            self.hass.async_create_task(
                 self._on_aws_client_status_changed(entry_id, status)
-            ).__await__()
+            )
 
         self.config_entry.async_on_unload(
             async_dispatcher_connect(
@@ -283,7 +283,12 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         if status == ConnectivityStatus.CONNECTED:
             await self._aws_client.update()
 
-        if status in [ConnectivityStatus.FAILED, ConnectivityStatus.NOT_CONNECTED]:
+        if status in [
+            ConnectivityStatus.FAILED,
+            ConnectivityStatus.NOT_CONNECTED,
+            ConnectivityStatus.DISCONNECTED,
+            ConnectivityStatus.EXPIRED_TOKEN,
+        ]:
             await self._handle_connection_failure()
 
     async def _handle_connection_failure(self):
