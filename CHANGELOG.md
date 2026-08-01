@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.0.26
+
+- Fix `KeyError` traceback in `async_remove_entry` and `async_unload_entry` when integration entry is deleted or removed
+- Refactor `async_unload_entry` to use official Home Assistant `hass.config_entries.async_unload_platforms` API helper
+- Clean up `async_remove_entry` to avoid redundant unload calls and purge store data safely
+- Upgrade rate limit (`HTTP 429`) backoff schedule to scale aggressively up to 24 hours (5m -> 15m -> 30m -> 1h -> 2h -> 4h -> 8h -> 12h -> 24h) to allow recovery from Maytronics/AWS IoT bans
+- Format log messages with clean minute/hour backoff indicators
+
 ## v1.0.25
 
 - Add HTTP 429 Too Many Requests rate-limit handling with Retry-After header support and `ConnectivityStatus.RATE_LIMIT`
