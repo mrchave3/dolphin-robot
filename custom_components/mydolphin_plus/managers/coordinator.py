@@ -308,18 +308,39 @@ class MyDolphinPlusCoordinator(DataUpdateCoordinator):
         self._is_reconnecting = True
         self._reconnect_attempts += 1
 
+        max_delay_seconds = 86400  # 24 hours maximum backoff
+
         if status == ConnectivityStatus.RATE_LIMIT:
-            # For HTTP 429 Rate Limit, back off for 5 to 15 minutes
-            delay = min(900, max(300, 300 * self._reconnect_attempts))
+            # Aggressive Rate Limit backoff schedule: 5m, 15m, 30m, 1h, 2h, 4h, 8h, 12h, 24h
+            rate_limit_delays = [300, 900, 1800, 3600, 7200, 14400, 28800, 43200, 86400]
+            delay_idx = min(self._reconnect_attempts - 1, len(rate_limit_delays) - 1)
+            delay = rate_limit_delays[delay_idx]
+
+            delay_hours = delay / 3600
+            time_str = (
+                f"{delay_hours:.1f} hour(s)"
+                if delay_hours >= 1
+                else f"{delay / 60:.1f} minute(s)"
+            )
+
             _LOGGER.warning(
-                f"Maytronics API rate limit reached (HTTP 429). Backing off for {delay / 60:.1f} minute(s) before retry (attempt #{self._reconnect_attempts})"
+                f"Maytronics API rate limit reached (HTTP 429). Aggressive backoff active: waiting {time_str} before retry (attempt #{self._reconnect_attempts})"
             )
         else:
-            # Exponential backoff: 60s, 120s, 240s, 480s, max 900s (15 min)
+            # Standard exponential backoff scaling up to 24 hours maximum
             base_delay = API_RECONNECT_INTERVAL.total_seconds()
-            delay = min(900, base_delay * (2 ** (self._reconnect_attempts - 1)))
+            calculated_delay = base_delay * (2 ** (self._reconnect_attempts - 1))
+            delay = min(max_delay_seconds, int(calculated_delay))
+
+            delay_hours = delay / 3600
+            time_str = (
+                f"{delay_hours:.1f} hour(s)"
+                if delay_hours >= 1
+                else f"{delay / 60:.1f} minute(s)"
+            )
+
             _LOGGER.warning(
-                f"Connection failure ({status}) - reconnection attempt #{self._reconnect_attempts}, waiting {delay / 60:.1f} minute(s) before retry"
+                f"Connection failure ({status}) - reconnection attempt #{self._reconnect_attempts}, waiting {time_str} before retry"
             )
 
         await self._aws_client.terminate()
