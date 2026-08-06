@@ -170,10 +170,15 @@ AWS_BASE_HOST = f"{AWS_REGION}.amazonaws.com"
 AWS_IOT_URL = f"a12rqfdx55bdbv-ats.iot.{AWS_BASE_HOST}"
 AWS_IOT_PORT = 443
 
+DEFAULT_USER_AGENT = "MyDolphinPlus/1.0.0 (iPhone; iOS 17.4.1; Scale/3.00)"
+
 LOGIN_HEADERS = {
     "appkey": "346BDE92-53D1-4829-8A2E-B496014B586C",
     "Content-Type": "application/x-www-form-urlencoded; charset=utf-8",
-    "integration-version": "1.0.19",
+    "User-Agent": DEFAULT_USER_AGENT,
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "en-US,en;q=0.9",
+    "integration-version": "1.0.27",
 }
 
 CA_FILE_NAME = "AmazonRootCA.pem"

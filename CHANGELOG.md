@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.0.27
+
+- Add mobile app `User-Agent` signature (`MyDolphinPlus/1.0.0 (iPhone; iOS 17.4.1; Scale/3.00)`), `Accept`, and `Accept-Language` headers to `LOGIN_HEADERS` to mimic official mobile app requests and prevent WAF/gateway rate-limiting of default Python/Aiohttp User-Agents
+- Update `integration-version` header to `1.0.27`
+
 ## v1.0.26
 
 - Fix `KeyError` traceback in `async_remove_entry` and `async_unload_entry` when integration entry is deleted or removed
